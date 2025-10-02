@@ -153,26 +153,26 @@ protected:
                 return result;
             }
 
-            // No space in current chunk, allocate new one
+            // No space in current chunk: allocate once, then keep reattaching to
+            // the moving head until we become the new head.
             ChunkFooter* new_chunk = allocate_new_chunk(bytes, alignment, chunk);
 
-            // Install new chunk (may fail if another thread did it first)
-            if (current.compare_exchange_strong(
-                chunk,
+            ChunkFooter* expected = chunk;
+            while (!current.compare_exchange_weak(
+                expected,
                 new_chunk,
                 std::memory_order_acq_rel,
                 std::memory_order_acquire
             )) {
-                // Success: retry allocation on new chunk
-                continue;
-            } else {
-                // Another thread installed a chunk, deallocate ours and retry
-                upstream->deallocate(
-                    new_chunk->allocation_ptr,
-                    new_chunk->allocation_size + sizeof(ChunkFooter),
-                    alignof(ChunkFooter)
-                );
+                // Another thread published a chunk first. Point at the new head
+                // and retry without discarding our standby chunk.
+                chunk = expected;
+                new_chunk->prev = chunk;
+                new_chunk->next.store(0, std::memory_order_relaxed);
+                expected = chunk;
             }
+
+            continue;
         }
     }
 
