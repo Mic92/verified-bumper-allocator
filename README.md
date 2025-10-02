@@ -112,11 +112,14 @@ struct ChunkFooter {
 ## Building and Testing
 
 ```bash
-# Compile test
-g++ -std=c++20 -pthread -O2 test_thread_safe_monotonic_buffer.cpp -o test
+# Run tests
+make check
 
-# Run test
-./test
+# Run benchmark
+make bench
+
+# Verify formal proof
+make verify
 ```
 
 ## Files
@@ -128,11 +131,7 @@ g++ -std=c++20 -pthread -O2 test_thread_safe_monotonic_buffer.cpp -o test
 
 ## Verification
 
-The Dafny proof can be verified with:
-
-```bash
-dafny verify --standard-libraries ThreadSafeMonotonicBuffer.dfy
-```
+The Dafny proof can be verified with `make verify`.
 
 ## Performance Characteristics
 
