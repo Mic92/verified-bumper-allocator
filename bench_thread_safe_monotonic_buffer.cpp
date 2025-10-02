@@ -91,8 +91,9 @@ int main() {
     for (const auto& c : cases) {
         run_case("malloc", c, [&](std::size_t sz) {
             void* block = std::malloc(sz);
+            // Write to memory to prevent optimization
+            *static_cast<volatile char*>(block) = 0;
             std::free(block);
-            return block;
         });
     }
 
