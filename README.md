@@ -6,7 +6,7 @@ This implementation is based on formal verification in Dafny.
 ## Features
 
 - **Thread-safe**: Multiple threads can allocate concurrently without locks
-- **Wait-free**: Allocation completes in bounded steps (excluding OOM)
+- **Lock-free**: System-wide progress guaranteed (individual threads may retry on contention)
 - **Formally verified**: Implementation corresponds to verified Dafny specification
 - **Drop-in replacement**: Compatible with `std::pmr::memory_resource` interface
 
@@ -17,7 +17,7 @@ The implementation is based on the formal proof in `ThreadSafeMonotonicBuffer.df
 1. **Linearizability** (`linearizabilityTheorem` - line 303): All concurrent operations are linearizable to a sequential execution
 2. **Memory Safety** (`casDisjointnessTheorem` - line 269): No allocation overlaps another
 3. **Race Freedom** (`raceFreedomTheorem` - line 351): Pairwise disjointness from monotonic ordering
-4. **Wait-Freedom**: Every allocation completes in bounded steps
+4. **Lock-Freedom**: System-wide progress guaranteed (some thread always makes progress)
 
 ## Usage
 
@@ -65,7 +65,7 @@ thread_safe_monotonic_buffer_resource(void* buffer,
 ## API
 
 ### `void* allocate(size_t bytes, size_t alignment)`
-Allocate `bytes` with specified `alignment`. Thread-safe and wait-free.
+Allocate `bytes` with specified `alignment`. Thread-safe and lock-free.
 
 ### `void deallocate(void* p, size_t bytes, size_t alignment) noexcept`
 No-op (monotonic semantics). Thread-safe.
@@ -104,7 +104,7 @@ struct ChunkFooter {
 
 ### Thread-Safety
 
-- **allocate()**: Wait-free, thread-safe
+- **allocate()**: Lock-free, thread-safe
 - **deallocate()**: Thread-safe (no-op)
 - **release()**: Requires external synchronization
 - **upstream_resource()**: Thread-safe (immutable after construction)
@@ -136,10 +136,10 @@ dafny verify --standard-libraries ThreadSafeMonotonicBuffer.dfy
 
 ## Performance Characteristics
 
-- **Common case**: Wait-free bump allocation (single CAS)
+- **Common case**: Lock-free bump allocation (single CAS on success)
 - **Chunk overflow**: One upstream allocation + CAS to install new chunk
-- **Contention**: CAS retry loop (bounded by number of threads)
-- **Overhead**: One atomic operation per allocation
+- **Contention**: CAS retry loop (unbounded retries possible, but system makes progress)
+- **Overhead**: One or more atomic operations per allocation
 
 ## Limitations
 
