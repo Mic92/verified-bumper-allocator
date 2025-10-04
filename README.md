@@ -1,5 +1,8 @@
 # Thread-Safe Monotonic Buffer Resource
 
+I created this project to play around with formal verification and to see what the performance of a lock-free bumper allocator,
+would be.
+
 A lock-free, thread-safe bump allocator using atomic operations with chained buffer allocation strategy.
 This implementation is based on formal verification in Dafny.
 
